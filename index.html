@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>나의 AI 데모</title>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+</head>
+<body>
+  <h1>AI 모델 테스트</h1>
+  <button type="button" onclick="init()">모델 불러오기</button>
+  <div id="label-container"></div>
+
+  <script>
+    const URL = "./my_model/";  // 로컬 폴더 기준
+
+    let model, webcam, labelContainer, maxPredictions;
+
+    async function init() {
+      const modelURL = URL + "model.json";
+      const metadataURL = URL + "metadata.json";
+
+      model = await tmImage.load(modelURL, metadataURL);
+      labelContainer = document.getElementById("label-container");
+      for (let i = 0; i < model.getTotalClasses(); i++) {
+        labelContainer.appendChild(document.createElement("div"));
+      }
+
+      alert("모델이 로드되었습니다!");
+    }
+  </script>
+</body>
+</html>
