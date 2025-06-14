@@ -3,32 +3,75 @@
 <head>
   <meta charset="UTF-8">
   <title>나의 AI 데모</title>
-  <!-- TensorFlow.js 추가 -->
+  <!-- TensorFlow.js 및 Teachable Machine 이미지 라이브러리 -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0"></script>
-  <!-- Teachable Machine 이미지 라이브러리 -->
   <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+  <style>
+    video { width: 300px; height: 225px; border: 1px solid gray; }
+    #label-container div { margin: 5px 0; }
+  </style>
 </head>
 <body>
   <h1>AI 모델 테스트</h1>
-  <button type="button" onclick="init()">모델 불러오기</button>
+  <button onclick="init()">모델 불러오기</button>
+  <button onclick="startPredict()">실시간 분류 시작</button>
+  <div>
+    <video id="webcam" autoplay muted playsinline></video>
+  </div>
   <div id="label-container"></div>
 
   <script>
+    let model, webcam, labelContainer, maxPredictions;
+
     const URL = "./my_model/";
-    let model, labelContainer, maxPredictions;
 
     async function init() {
       const modelURL = URL + "model.json";
       const metadataURL = URL + "metadata.json";
 
-      // 모델 로딩
+      // 모델 및 메타데이터 로드
       model = await tmImage.load(modelURL, metadataURL);
+      maxPredictions = model.getTotalClasses();
+
+      // label 출력 영역 초기화
       labelContainer = document.getElementById("label-container");
-      for (let i = 0; i < model.getTotalClasses(); i++) {
+      labelContainer.innerHTML = "";
+      for (let i = 0; i < maxPredictions; i++) {
         labelContainer.appendChild(document.createElement("div"));
       }
 
-      alert("모델이 로드되었습니다!");
+      // 웹캠 설정
+      webcam = new tmImage.Webcam(300, 225, true); // width, height, flip
+      await webcam.setup(); // 권한 요청
+      await webcam.play();
+      window.requestAnimationFrame(loop);
+
+      document.getElementById("webcam").appendChild(webcam.canvas);
+
+      alert("모델과 웹캠이 준비되었습니다!");
+    }
+
+    async function loop() {
+      webcam.update(); // 웹캠 프레임 업데이트
+      await predict(); // 예측 실행
+      window.requestAnimationFrame(loop); // 루프 반복
+    }
+
+    async function predict() {
+      const prediction = await model.predict(webcam.canvas);
+      for (let i = 0; i < maxPredictions; i++) {
+        const classPrediction =
+          prediction[i].className + ": " + (prediction[i].probability * 100).toFixed(2) + "%";
+        labelContainer.childNodes[i].innerHTML = classPrediction;
+      }
+    }
+
+    function startPredict() {
+      if (!model || !webcam) {
+        alert("먼저 '모델 불러오기'를 클릭하세요!");
+        return;
+      }
+      loop();
     }
   </script>
 </body>
